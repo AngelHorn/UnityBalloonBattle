@@ -112,4 +112,6 @@ public class Player : MonoBehaviour
 		//num.text = (int.Parse (num.text) + 1).ToString ();
 		//Debug.Log (int.Parse (num.text) + 1);
 	}
+
+
 }
