@@ -49,13 +49,18 @@ public class EnemyAI : MonoBehaviour
 		thinkRate = thinkRate + Random.Range (-1f, 1f);
 	}
 
-	void AIThink ()
+	public void BalloonBroken ()
 	{
-		
+		transform.Find ("BalloonTest").gameObject.active = false;
+		transform.Find ("Parachute").gameObject.active = true;
 	}
 
 	void Update ()
 	{
+		if (transform.Find ("BalloonTest").gameObject.active == false) {
+			return;
+		}
+
 		if (Time.time > nextThinkTime) {
 			
 			if (Vector2.Distance (transform.position, player.transform.position) < 7.0f) {
@@ -64,11 +69,11 @@ public class EnemyAI : MonoBehaviour
 					//如果在主角上方 则进攻
 					currentRoleState = roleState.RUNTOPLAYER;
 					if (transform.position.y >= player.transform.position.y
-						&& transform.position.x < player.transform.position.x) {
+					    && transform.position.x < player.transform.position.x) {
 						getAIAxisHorizontal = 1;
 					}
 					if (transform.position.y >= player.transform.position.y
-						&& transform.position.x > player.transform.position.x) {
+					    && transform.position.x > player.transform.position.x) {
 						getAIAxisHorizontal = -1;
 					}
 				} else {
@@ -138,7 +143,7 @@ public class EnemyAI : MonoBehaviour
 			Debug.LogError ("motherfucker");
 			break;
 		}
-		if(roleState.RUNTOPLAYER == currentRoleState){
+		if (roleState.RUNTOPLAYER == currentRoleState) {
 			//Debug.Log ("fuck");
 		}
 
@@ -187,6 +192,44 @@ public class EnemyAI : MonoBehaviour
 	void FixedUpdate ()
 	{
 
+		grounded = Physics2D.Linecast (transform.position, groundCheck.position, 1 << LayerMask.NameToLayer ("Ground"));
+		animator.SetBool ("grounded", grounded);
+
+		//下落状态
+		if (transform.Find ("Parachute").gameObject.active == true &&
+		    transform.Find ("BalloonTest").gameObject.active == false) {
+			if (grounded) {
+				transform.Find ("Parachute").gameObject.active = false;
+				return;
+			}
+			rigidbody2D.velocity = new Vector2 (rigidbody2D.velocity.x, -1f);
+			animator.SetBool ("landing", true);
+			return;
+		}
+		//气球打气状态
+		if (transform.Find ("Parachute").gameObject.active == false &&
+		    transform.Find ("BalloonTest").gameObject.transform.localScale.x == 1 &&
+		    transform.Find ("BalloonTest").gameObject.active == false) {
+			transform.Find ("BalloonTest").gameObject.active = true;
+			transform.Find ("BalloonTest").gameObject.transform.localScale = new Vector2 (0, 0);
+			rigidbody2D.velocity = new Vector2 (0, 0);
+			animator.SetBool ("landing", false);
+			animator.SetBool ("casting", true);
+			return;
+		}
+		if (transform.Find ("BalloonTest").gameObject.transform.localScale.x < 1 &&
+		    transform.Find ("BalloonTest").gameObject.active == true) {
+			//5秒打气
+			transform.Find ("BalloonTest").gameObject.transform.localScale += new Vector3 (Time.deltaTime / 5, Time.deltaTime / 5, 0f);
+			return;
+		}
+		//重置成正常正常状态
+		if (transform.Find ("Parachute").gameObject.active == false &&
+			transform.Find ("BalloonTest").gameObject.active == true &&
+			transform.Find ("BalloonTest").gameObject.transform.localScale.x >= 1) {
+			animator.SetBool ("casting", false);
+		}
+
 		if (inputHorizontal && grounded) {
 			rigidbody2D.AddForce (new Vector2 (getAIAxisHorizontal * speed, 0));
 			//Debug.Log (rigidbody2D.velocity.y);
@@ -199,9 +242,6 @@ public class EnemyAI : MonoBehaviour
 		}
 		rigidbody2D.velocity = new Vector2 (Mathf.Clamp (rigidbody2D.velocity.x, -maxSpeed, maxSpeed), rigidbody2D.velocity.y);
 		//Debug.Log (rigidbody2D.velocity.x);
-
-		grounded = Physics2D.Linecast (transform.position, groundCheck.position, 1 << LayerMask.NameToLayer ("Ground"));
-		animator.SetBool ("grounded", grounded);
 
 		if (inputJump) {
 			rigidbody2D.AddForce (new Vector2 (0, jumpForce));
