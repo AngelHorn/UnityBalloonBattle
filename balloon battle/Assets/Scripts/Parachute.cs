@@ -24,7 +24,10 @@ public class Parachute : MonoBehaviour
 			Application.LoadLevel ("Scenes/S2");
 		}
 		if (myTagName == "Enemy" && otherTagName == "Player") {
-			Destroy (gameObject.transform.parent.gameObject);
+//			Debug.Log ("shit");
+			//调用敌人的die方法
+			gameObject.transform.parent.gameObject.GetComponent<EnemyAI>().dead();
+//			Destroy (gameObject.transform.parent.gameObject);
 		}
 		if (myTagName == "Player" && otherTagName == "Player") {
 			Application.LoadLevel ("Scenes/S2");

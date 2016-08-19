@@ -12,6 +12,7 @@ public class EnemyAI : MonoBehaviour
 {
 	public GameObject player;
 	public Transform mainCamera;
+	public AudioClip deadSE;
 
 	public float jumpForce;
 	public float speed;
@@ -26,6 +27,7 @@ public class EnemyAI : MonoBehaviour
 	Animator animator;
 	Rigidbody2D rigidbody2D;
 	Transform groundCheck;
+	AudioSource audioSource;
 
 
 	public float jumpRate = 0.25f;
@@ -45,19 +47,37 @@ public class EnemyAI : MonoBehaviour
 
 		animator = GetComponent<Animator> ();
 		rigidbody2D = GetComponent<Rigidbody2D> ();
+		audioSource = GetComponent<AudioSource> ();
 
 		thinkRate = thinkRate + Random.Range (-1f, 1f);
 	}
 
 	public void BalloonBroken ()
 	{
+
+		transform.Find ("BalloonTest").gameObject.GetComponent<Renderer> ().enabled = false;
+		transform.Find ("Parachute").gameObject.GetComponent<Renderer> ().enabled = true;
+		transform.Find ("Parachute").gameObject.GetComponent<Collider2D> ().enabled = true;
+	}
+
+	public void dead ()
+	{
+		//清除碰撞体 自由落体 
+		transform.Find ("BalloonTest").gameObject.GetComponent<Renderer> ().enabled = false;
+		transform.Find ("Parachute").gameObject.GetComponent<Renderer> ().enabled = false;
 		transform.Find ("BalloonTest").gameObject.active = false;
-		transform.Find ("Parachute").gameObject.active = true;
+		transform.Find ("Parachute").gameObject.active = false;
+
+		gameObject.GetComponent<Collider2D>().isTrigger = true;
+		rigidbody2D.velocity = new Vector2 (rigidbody2D.velocity.x, -10f);
+		animator.SetBool ("dead", true);
+		audioSource.clip = deadSE;
+		audioSource.Play ();
 	}
 
 	void Update ()
 	{
-		if (transform.Find ("BalloonTest").gameObject.active == false) {
+		if (transform.Find ("BalloonTest").gameObject.GetComponent<Renderer> ().enabled == false) {
 			return;
 		}
 
@@ -196,10 +216,11 @@ public class EnemyAI : MonoBehaviour
 		animator.SetBool ("grounded", grounded);
 
 		//下落状态
-		if (transform.Find ("Parachute").gameObject.active == true &&
-		    transform.Find ("BalloonTest").gameObject.active == false) {
+		if (transform.Find ("Parachute").gameObject.GetComponent<Renderer> ().enabled == true &&
+		    transform.Find ("BalloonTest").gameObject.GetComponent<Renderer> ().enabled == false) {
 			if (grounded) {
-				transform.Find ("Parachute").gameObject.active = false;
+				transform.Find ("Parachute").gameObject.GetComponent<Renderer> ().enabled = false;
+				transform.Find ("Parachute").gameObject.GetComponent<Collider2D> ().enabled = false;
 				return;
 			}
 			rigidbody2D.velocity = new Vector2 (rigidbody2D.velocity.x, -1f);
@@ -207,10 +228,10 @@ public class EnemyAI : MonoBehaviour
 			return;
 		}
 		//气球打气状态
-		if (transform.Find ("Parachute").gameObject.active == false &&
+		if (transform.Find ("Parachute").gameObject.GetComponent<Renderer> ().enabled == false &&
 		    transform.Find ("BalloonTest").gameObject.transform.localScale.x == 1 &&
-		    transform.Find ("BalloonTest").gameObject.active == false) {
-			transform.Find ("BalloonTest").gameObject.active = true;
+		    transform.Find ("BalloonTest").gameObject.GetComponent<Renderer> ().enabled == false) {
+			transform.Find ("BalloonTest").gameObject.GetComponent<Renderer> ().enabled = true;
 			transform.Find ("BalloonTest").gameObject.transform.localScale = new Vector2 (0, 0);
 			rigidbody2D.velocity = new Vector2 (0, 0);
 			animator.SetBool ("landing", false);
@@ -218,15 +239,15 @@ public class EnemyAI : MonoBehaviour
 			return;
 		}
 		if (transform.Find ("BalloonTest").gameObject.transform.localScale.x < 1 &&
-		    transform.Find ("BalloonTest").gameObject.active == true) {
+		    transform.Find ("BalloonTest").gameObject.GetComponent<Renderer> ().enabled == true) {
 			//5秒打气
 			transform.Find ("BalloonTest").gameObject.transform.localScale += new Vector3 (Time.deltaTime / 5, Time.deltaTime / 5, 0f);
 			return;
 		}
 		//重置成正常正常状态
-		if (transform.Find ("Parachute").gameObject.active == false &&
-			transform.Find ("BalloonTest").gameObject.active == true &&
-			transform.Find ("BalloonTest").gameObject.transform.localScale.x >= 1) {
+		if (transform.Find ("Parachute").gameObject.GetComponent<Renderer> ().enabled == false &&
+		    transform.Find ("BalloonTest").gameObject.GetComponent<Renderer> ().enabled == true &&
+		    transform.Find ("BalloonTest").gameObject.transform.localScale.x >= 1) {
 			animator.SetBool ("casting", false);
 		}
 
@@ -274,5 +295,11 @@ public class EnemyAI : MonoBehaviour
 	void seekPlayer ()
 	{
 		
+	}
+
+	void OnCollisionEnter2D(Collision2D other){
+		if(other.gameObject.tag == "Player" && gameObject.transform.localScale.x < 1 && grounded){			
+			dead ();
+		}
 	}
 }
