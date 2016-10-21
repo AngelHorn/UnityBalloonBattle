@@ -65,7 +65,10 @@ public class Player : MonoBehaviour
 	// Update is called once per frame
 	void FixedUpdate ()
 	{
-
+		/*
+			在气球大战中，不是直接控制力的大小，而是直接控制速度。速度和车的档位类似。一共分5档。比如12345。加速间隔为0.2秒。
+			假如按住一个按键1秒。那么player将会达到最大速度5。反向按1秒就会把速度变成0.
+		*/
 		if (inputHorizontal && grounded) {
 			rigidbody2D.AddForce (new Vector2(Input.GetAxis ("Horizontal") * speed,0));
 			//Debug.Log (rigidbody2D.velocity.y);
